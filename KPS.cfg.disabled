@@ -1,0 +1,664 @@
+CONTRACT_TYPE
+{
+	sortKey = e
+	name = ConstellationsKPSStart
+	group = KerbinConstellations
+
+	title = Begin construction of a navigation satellite system
+	description = CommTech in partnership with several goverment agencies has approached us with a very ambitious project: a satellite system for navigation.\nThe idea is to build a constellation of radio beacons in MKO. Then, with a compact ground reciever one will be able to trilaterate theirs location with a high degree of precision.\nThe project is dubbed "Kerbstar Kerbal Positioning System" and due to the high number of satellites required, it will take multiple stages and contracts to complete. For now you are asked to build and launch a prototype satellite.
+
+	synopsis = Place a prototype navigation satellite in MKO
+
+	maxCompletions = 1
+	maxSimultaneous = 1
+
+	completedMessage = The satellite is in position and working!
+
+	prestige = Significant
+
+	targetBody = HomeWorld()
+
+	// TODO
+	rewardScience = 20
+	rewardReputation = 5
+	rewardFunds = 250000.0
+	advanceFunds = 150000.0
+	failureReputation = 5
+	failureFunds = 100000.0
+
+	DATA
+	{
+		type = double
+		period = @/targetBody.RotationalPeriod() / 2
+		minPeriod = @/period - 1
+		maxPeriod = @/period + 1
+		sma = Pow((@/targetBody.GM() * Pow(@/period, 2)) / 39.478417604357432, 0.33333333333333331)
+		alt = @/sma - @/targetBody.Radius()
+		inc = 55
+	}
+
+	DATA
+	{
+		type = long
+		intAlt = long(@/alt)
+	}
+
+	REQUIREMENT
+	{
+		name = Any
+		type = Any
+
+		title = Have solar panels unlocked.
+
+		REQUIREMENT
+		{
+			name = PartModuleUnlocked
+			type = PartModuleUnlocked
+			partModule = ModuleDeployableSolarPanel
+		}
+		REQUIREMENT:NEEDS[NearFutureSolar]
+		{
+			name = PartModuleUnlocked
+			type = PartModuleUnlocked
+			partModule = ModuleCurvedSolarPanel
+		}
+		REQUIREMENT:NEEDS[Kopernicus]
+		{
+			name = PartModuleUnlocked
+			type = PartModuleUnlocked
+			partModule = KopernicusSolarPanel
+		}
+	}
+
+	REQUIREMENT
+	{
+		name = TechResearched
+		type = TechResearched
+
+		part = HighGainAntenna
+	}
+
+	REQUIREMENT
+	{
+		name = Rendezvous
+		type = Rendezvous
+	}
+
+	BEHAVIOUR
+	{
+		name = SpawnVessel
+		type = SpawnVessel
+
+		VESSEL
+		{
+			name = KPS Marker A1
+			craftPart = constellations-dummy
+			owned = False
+			targetBody = HomeWorld()
+			vesselType = DroppedPart
+
+			ORBIT = CreateOrbit([@/sma, 0, @/inc, 0, 0, 0, 0], 1)
+		}
+	}
+
+	PARAMETER
+	{
+		name = VesselParameterGroup
+		type = VesselParameterGroup
+
+		define = KPS Sat A1
+
+		PARAMETER
+		{
+			name = NewVessel
+			type = NewVessel
+		}
+
+		PARAMETER
+		{
+			name = HasCrew
+			type = HasCrew
+			minCrew = 0
+			maxCrew = 0
+		}
+
+		PARAMETER
+		{
+			name = HasAntenna
+			type = HasAntenna
+			minAntennaPower = 10000000000 // 10G
+			antennaType = TRANSMIT
+		}
+
+		PARAMETER
+		{
+			name = Any
+			type = Any
+			title = Have solar panels onboard
+
+			PARAMETER
+			{
+				name = PartValidation
+				type = PartValidation
+				title = 1 or more solar panels
+				hideChildren = true
+
+				partModule = ModuleDeployableSolarPanel
+				minCount = 1
+			}
+		
+			PARAMETER:NEEDS[NearFutureSolar]
+			{
+				name = PartValidation
+				type = PartValidation
+				title = 1 or more curved solar panels
+				hideChildren = true
+				
+				partModule = ModuleCurvedSolarPanel
+				minCount = 1
+			}
+		
+			PARAMETER:NEEDS[Kopernicus]
+			{
+				name = PartValidation
+				type = PartValidation
+				hideChildren = true
+				title = 1 or more solar panels
+				partModule = KopernicusSolarPanel
+				minCount = 1
+			}
+		}
+
+		PARAMETER
+		{
+			name = Orbit
+			type = Orbit
+
+			targetBody = HomeWorld()
+
+			minPeriod = @/minPeriod
+			maxPeriod = @/maxPeriod
+
+			// 1581762.04
+			minAltitude = @/alt - 500
+			maxAltitude = @/alt + 500
+
+			minInclination = @/inc - 0.1
+			maxInclination = @/inc + 0.1
+		}
+
+		PARAMETER
+		{
+			name = Rendezvous
+			type = Rendezvous
+
+			vessel = KPS Marker A1
+			distance = 3000
+
+			title = Place the relay within 3km of the marker
+
+			disableOnStateChange = true
+		}
+
+		duration = 2d
+	}
+
+	PARAMETER
+	{
+		name = VesselParameterGroup
+		type = VesselParameterGroup
+
+		vessel = KPS Sat A1
+
+		title = "Circularize at "+@/intAlt+"m with less than 50m deviation (Optional)"
+
+		optional = True
+		rewardReputation = 10.0
+		rewardFunds = 5000
+
+		PARAMETER
+		{
+			name = Orbit
+			type = Orbit
+
+			minAltitude = @/alt - 50
+			maxAltitude = @/alt + 50
+		}
+
+		duration = 5s
+	}
+
+	PARAMETER
+	{
+		name = VesselParameterGroup
+		type = VesselParameterGroup
+
+		vessel = KPS Sat A1
+
+		title = "Circularize at "+@/intAlt+"m with less than 1m deviation (Optional)"
+
+		optional = True
+		rewardReputation = 20.0
+		rewardFunds = 10000
+
+		PARAMETER
+		{
+			name = Orbit
+			type = Orbit
+
+			minAltitude = @/alt - 0.5
+			maxAltitude = @/alt + 0.49
+		}
+
+		duration = 5s
+	}
+
+	PARAMETER
+	{
+		name = VesselParameterGroup
+		type = VesselParameterGroup
+
+		vessel = KPS Sat A1
+
+		title = Place the relay within 50m of the marker (Optional)
+
+		optional = True
+		rewardReputation = 10.0
+		rewardFunds = 5000
+
+		PARAMETER
+		{
+			name = Rendezvous
+			type = Rendezvous
+
+			vessel = KPS Marker A1
+			distance = 50
+		}
+	}
+
+	BEHAVIOUR
+	{
+		name = DestroyVessel
+		type = DestroyVessel
+		onState = CONTRACT_COMPLETED
+		vessel = KPS Marker A1
+	}
+}
+
+CONTRACT_TYPE
+{
+	DATA_EXPAND
+	{
+		type = int
+		block = [ 1, 2, 3, 4, 5, 6 ]
+	}
+
+	DATA
+	{
+		type = List<string>
+		romans = [ "I", "II", "III", "IV", "V", "VI" ]
+		letters = [ "A", "B", "C", "D", "E", "F" ]
+	}
+
+	DATA
+	{
+		type = string
+		roman = @/roman.ElementAt(@/block)
+		letter = @/letters.ElementAt(@/block)
+	}
+
+	sortKey = f
+	name = ConstellationsKPSBlock
+	group = KerbinConstellations
+
+	title = TODO
+	description = TODO
+
+	synopsis = TODO
+
+	maxCompletions = 1
+	maxSimultaneous = 1
+
+	completedMessage = Block @/roman is complete!
+
+	prestige = Exceptional
+
+	targetBody = HomeWorld()
+
+	// TODO
+	rewardScience = 20
+	rewardReputation = 5
+	rewardFunds = 250000.0
+	advanceFunds = 150000.0
+	failureReputation = 5
+	failureFunds = 100000.0
+
+	DATA
+	{
+		type = double
+		period = @/targetBody.RotationalPeriod() / 2
+		minPeriod = @/period - 1
+		maxPeriod = @/period + 1
+		sma = Pow((@/targetBody.GM() * Pow(@/period, 2)) / 39.478417604357432, 0.33333333333333331)
+		alt = @/sma - @/targetBody.Radius()
+		inc = 55
+		lan = 1.04719755 * (@/block - 1)
+	}
+
+	DATA
+	{
+		type = long
+		intAlt = long(@/alt)
+	}
+
+	REQUIREMENT
+	{
+		name = CompleteContract
+		type = CompleteContract
+
+		title = "Must have "+(@block == 1 ? "prototype launched" : "previous block completed")+" at least 30 days ago"
+		contractType = @/block == 1 ? ConstellationsKPSStart : ()"ConstellationsKPSBlock."+@/block)
+		cooldownDuration = 2d//30d //TODO
+	}
+
+	BEHAVIOUR
+	{
+		name = SpawnVessel
+		type = SpawnVessel
+
+		VESSEL
+		{
+			name = "KPS Marker "+@/letter+"1"
+			craftPart = constellations-dummy
+			owned = False
+			targetBody = HomeWorld()
+			vesselType = DroppedPart
+
+			ORBIT = CreateOrbit([@/sma, 0, @/inc, 0, @/lan, 0, 0], 1)
+		}
+	}
+
+	BEHAVIOUR
+	{
+		name = SpawnVessel
+		type = SpawnVessel
+
+		VESSEL
+		{
+			name = "KPS Marker "+@/letter+"2"
+			craftPart = constellations-dummy
+			owned = False
+			targetBody = HomeWorld()
+			vesselType = DroppedPart
+
+			ORBIT = CreateOrbit([@/sma, 0, @/inc, 0, @/lan, 1.57079633, 0], 1)
+		}
+	}
+
+	BEHAVIOUR
+	{
+		name = SpawnVessel
+		type = SpawnVessel
+
+		VESSEL
+		{
+			name = "KPS Marker "+@/letter+"3"
+			craftPart = constellations-dummy
+			owned = False
+			targetBody = HomeWorld()
+			vesselType = DroppedPart
+
+			ORBIT = CreateOrbit([@/sma, 0, @/inc, 0, @/lan, 3.14159265, 0], 1)
+		}
+	}
+
+	BEHAVIOUR
+	{
+		name = SpawnVessel
+		type = SpawnVessel
+
+		VESSEL
+		{
+			name = "KPS Marker "+@/letter+"4"
+			craftPart = constellations-dummy
+			owned = False
+			targetBody = HomeWorld()
+			vesselType = DroppedPart
+
+			ORBIT = CreateOrbit([@/sma, 0, @/inc, 0, @/lan, -1.57079633, 0], 1)
+		}
+	}
+
+	PARAMETER
+	{
+		ITERATOR
+		{
+			type = string
+			name = [@/letter+"1", @/letter+"2", @/letter+"3", @/letter+"4"]
+		}
+		type = All
+
+		PARAMETER
+		{
+			name = VesselParameterGroup
+			type = VesselParameterGroup
+
+			define = "KPS Sat "+@../name
+
+			PARAMETER
+			{
+				name = NewVessel
+				type = NewVessel
+			}
+
+			PARAMETER
+			{
+				name = HasCrew
+				type = HasCrew
+				minCrew = 0
+				maxCrew = 0
+			}
+
+			PARAMETER
+			{
+				name = HasAntenna
+				type = HasAntenna
+				minAntennaPower = 10000000000 // 10G
+				antennaType = TRANSMIT
+			}
+
+			PARAMETER
+			{
+				name = Any
+				type = Any
+				title = Have solar panels onboard
+
+				PARAMETER
+				{
+					name = PartValidation
+					type = PartValidation
+					title = 1 or more solar panels
+					hideChildren = true
+
+					partModule = ModuleDeployableSolarPanel
+					minCount = 1
+				}
+			
+				PARAMETER:NEEDS[NearFutureSolar]
+				{
+					name = PartValidation
+					type = PartValidation
+					title = 1 or more curved solar panels
+					hideChildren = true
+					
+					partModule = ModuleCurvedSolarPanel
+					minCount = 1
+				}
+			
+				PARAMETER:NEEDS[Kopernicus]
+				{
+					name = PartValidation
+					type = PartValidation
+					hideChildren = true
+					title = 1 or more solar panels
+					partModule = KopernicusSolarPanel
+					minCount = 1
+				}
+			}
+
+			PARAMETER
+			{
+				name = Orbit
+				type = Orbit
+
+				targetBody = HomeWorld()
+
+				minPeriod = @/minPeriod
+				maxPeriod = @/maxPeriod
+
+				minAltitude = @/alt - 500
+				maxAltitude = @/alt + 500
+
+				minInclination = @/inc - 0.1
+				maxInclination = @/inc + 0.1
+			}
+
+			PARAMETER
+			{
+				name = Rendezvous
+				type = Rendezvous
+
+				vessel = "KPS Marker "+@../../name
+				distance = 3000
+
+				title = Place the relay within 3km of the marker
+
+				disableOnStateChange = true
+			}
+
+			duration = 2d
+		}
+
+		PARAMETER
+		{
+			name = VesselParameterGroup
+			type = VesselParameterGroup
+
+			vessel = "KPS Sat "+@../name
+
+			title = "Circularize at "+@/intAlt+"m with less than 50m deviation (Optional)"
+
+			optional = True
+			rewardReputation = 10.0
+			rewardFunds = 5000
+
+			PARAMETER
+			{
+				name = Orbit
+				type = Orbit
+
+				minAltitude = @/alt - 50
+				maxAltitude = @/alt + 50
+			}
+
+			duration = 5s
+		}
+
+		PARAMETER
+		{
+			name = VesselParameterGroup
+			type = VesselParameterGroup
+
+			vessel = "KPS Sat "+@../name
+
+			title = "Circularize at "+@/intAlt+"m with less than 1m deviation (Optional)"
+
+			optional = True
+			rewardReputation = 20.0
+			rewardFunds = 10000
+
+			PARAMETER
+			{
+				name = Orbit
+				type = Orbit
+
+				minPeA = @/alt - 0.5
+				maxApA = @/alt + 0.49
+			}
+
+			duration = 5s
+		}
+
+		PARAMETER
+		{
+			name = VesselParameterGroup
+			type = VesselParameterGroup
+
+			vessel = "KPS Sat "+@../name
+
+			title = Place the relay within 50m of the marker (Optional)
+
+			optional = True
+			rewardReputation = 10.0
+			rewardFunds = 5000
+
+			PARAMETER
+			{
+				name = Rendezvous
+				type = Rendezvous
+
+				vessel = "KPS Marker "+@../../name
+				distance = 50
+			}
+		}
+	}
+
+	BEHAVIOUR
+	{
+		name = DestroyVessel
+		type = DestroyVessel
+		onState = PARAMETER_COMPLETED
+		parameter = @/letter+"1"
+		vessel = "KPS Marker "+@parameter
+	}
+
+	BEHAVIOUR
+	{
+		name = DestroyVessel
+		type = DestroyVessel
+		onState = PARAMETER_COMPLETED
+		parameter = @/letter+"2"
+		vessel = "KPS Marker "+@parameter
+	}
+
+	BEHAVIOUR
+	{
+		name = DestroyVessel
+		type = DestroyVessel
+		onState = PARAMETER_COMPLETED
+		parameter = @/letter+"3"
+		vessel = "KPS Marker "+@parameter
+	}
+
+	BEHAVIOUR
+	{
+		name = DestroyVessel
+		type = DestroyVessel
+		onState = PARAMETER_COMPLETED
+		parameter = @/letter+"4"
+		vessel = "KPS Marker "+@parameter
+	}
+}
+
+// Kerbal Positioning System - Block I
+
+//The GPS design originally called for 24 SVs, eight each in three approximately circular orbits,[81] but this was modified to six orbital planes with four satellites each.
+//[82] The six orbit planes have approximately 55° inclination (tilt relative to the Earth's equator) and are separated by 60° right ascension of the ascending node
+// (angle along the equator from a reference point to the orbit's intersection).[83] The orbital period is one-half of a sidereal day, i.e., 11 hours and 58 minutes, so that
+//the satellites pass over the same locations[84] or almost the same locations[85] every day. The orbits are arranged so that at least six satellites are always within line
+//of sight from everywhere on the Earth's surface (see animation at right).[86] The result of this objective is that the four satellites are not evenly spaced (90°) apart within
+// each orbit. In general terms, the angular difference between satellites in each orbit is 30°, 105°, 120°, and 105° apart, which sum to 360°
+
+//3 orbital planes, 56.0° inclination, ascending nodes separated by 120.0° longitude (8 operational satellites and 2 active spares per orbital plane)
+
+//The constellation operates in three orbital planes, with eight evenly spaced satellites on each.[
