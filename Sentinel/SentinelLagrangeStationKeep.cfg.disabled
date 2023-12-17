@@ -1,0 +1,199 @@
+CONTRACT_TYPE
+{
+	DATA_EXPAND
+	{
+		type = string
+		point = ["L3", "L4", "L5"]
+	}
+
+	sortKey = b
+
+	name = ConstellationsSentinelLagrangeStationKeep
+	group = SentinelConstellations
+
+	genericTitle = Planets's Lagrange point SENTINEL station-keeping
+	title = "@/targetBody"+"'s @/point point SENTINEL Infrared Telescope station-keeping"
+	description = It's been some time since we last verified position of SENTINEL telescope at @targetBody's @/point. It is normal for a satellite to drift from its target position over time, we ask you to bring the vessel back within margins. If a vessel is already in a correct position, you don't have to do anything other that focusing it.
+
+	synopsis = Fix @targetBody's @point SENTINEL Telescope orbit if necessary
+	genericDescription = Fix bodys @/point SENTINEL Telescope orbit if necessary
+
+	completedMessage = SENTINEL is in position and working!
+
+	prestige = Trivial
+
+	targetBody = @/planet
+
+	rewardScience = 0
+	rewardReputation = @Constellations:stationKeepReputation
+	rewardFunds = 3 * @Constellations:stationKeepFunds
+	advanceFunds = 0
+	failureReputation = @rewardReputation
+	failureFunds = @advanceFunds
+
+	DATA
+	{
+		type = CelestialBody
+		planet = ReachedBodies().Where(b => (b.IsPlanet() && b.Orbit().Eccentricity() < 0.4)).SelectUnique()
+		uniquenessCheck = CONTRACT_ALL
+
+		title = "Target body must be a planet, with an orbit with an eccentricity less than 0.4, and must be reached by the player"
+	}
+
+	DATA
+	{
+		type = List<VesselIdentifier>
+		requiredValue = false
+
+		l3Vessels = $constellations_l3_vessels
+		l4Vessels = $constellations_l4_vessels
+		l5Vessels = $constellations_l5_vessels
+		ffsVessels = (@/point != "L3" ? (@/point != "L4" ? @/l5Vessels : @/l4Vessels) : @/l3Vessels)
+	}
+
+	DATA
+	{
+		type = List<VesselIdentifier>
+		requiredValue = false
+
+		vessels = @/ffsVessels.Where(vi => (Vessel(vi).CelestialBody() == @/targetBody.Parent()))
+	}
+
+	REQUIREMENT
+	{
+		name = SentinelEstablished
+		type = Expression
+
+		expression = (@/vessels.Count() >= 0)
+		title = The telescope must be established
+	}
+
+	REQUIREMENT
+	{
+		name = OldSentinel
+		type = Expression
+
+		expression = Vessel(@/vessels.First()).MET() > @Constellations:stationKeepCD
+		title = At least @Constellations:stationKeepCD has passed since the telescope has been established
+	}
+
+	REQUIREMENT
+	{
+		name = CompleteContract
+		type = CompleteContract
+
+		title = At least @Constellations:stationKeepCD has passed since the last time the contract was completed.
+
+		contractType = ConstellationsSentinelLagrangeStationKeep
+		cooldownDuration = @Constellations:stationKeepCD
+		minCount = 0
+	}
+
+	DATA
+	{
+		type = string
+		hidden = true
+		marker = @/targetBody+" "+@/point+" Marker"
+	}
+
+	BEHAVIOUR
+	{
+		name = SpawnVessel
+		type = SpawnVessel
+
+		VESSEL
+		{
+			name = @/marker
+			craftPart = constellations-dummy
+			owned = False
+			targetBody = @/targetBody.Parent()
+			vesselType = DroppedPart
+
+			ORBIT
+			{
+				SMA = @/targetBody.Orbit().SemiMajorAxis()
+				ECC = @/targetBody.Orbit().Eccentricity() + 1.0E-12
+				INC = @/targetBody.Orbit().Inclination() + 1.0E-12
+				LPE = @/targetBody.Orbit().ArgumentOfPeriapsis()
+				LAN = @/targetBody.Orbit().LAN() + 1.0E-12
+				MNA = @/targetBody.Orbit().MeanAnomalyAtEpoch() + (@/point != "L3" ? (@/point != "L4" ? 5.23598775598 : -5.23598775598) : 3.14159265359)
+				EPH = @/targetBody.Orbit().Epoch() + 1.0E-12
+				REF = 0 // ignored
+			}
+		}
+	}
+
+	DATA
+	{
+		type = long
+		intAp = @/targetBody.Orbit().Apoapsis()
+		intPe = @/targetBody.Orbit().Periapsis()
+	}
+
+	DATA
+	{
+		type = double
+
+		magnitude = Round(Log(@/intAp, 10), 1)
+		g1 = Pow(10, Max(@magnitude-4, 2))
+		g2 = Max(Pow(10, @magnitude-7), 0.5)
+
+		oPrecision0 = Max(Round(@/intAp / 500, @g1), 20 * @g1)
+		dPrecision0 = Max(Round(@/intAp / 2500, 200000 * @g2), 200000 * @g2)
+	}
+
+	PARAMETER
+	{
+		name = Vessel
+		type = VesselParameterGroup
+
+		vessel = @/vessels.First()
+
+		PARAMETER
+		{
+			name = VesselIsType
+			type = VesselIsType
+			vesselType = Probe
+		}
+
+		PARAMETER
+		{
+			name = Orbit
+			type = Orbit
+
+			targetBody = @/targetBody.Parent()
+
+			minPeA = Max(0, @/intPe - @/oPrecision0)
+			maxPeA = @/intPe + @/oPrecision0
+			minApA = Max(0, @/intAp - @/oPrecision0)
+			maxApA = @/intAp + @/oPrecision0
+
+			minInclination = Max(0, @/targetBody.Orbit().Inclination() - 0.1)
+			maxInclination = Min(180, @/targetBody.Orbit().Inclination() + 0.1)
+		}
+
+		PARAMETER
+		{
+			name = Rendezvous
+			type = Rendezvous
+
+			title = "The vessel should be within "+@/dPrecision0.ToString("0")+"m of the marker"
+			hideChildren = !@Constellations:DEBUG
+
+			disableOnStateChange = true
+
+			vessel = @/marker
+			distance = @/dPrecision0
+		}
+
+		duration = 2d
+	}
+
+	BEHAVIOUR
+	{
+		name = DestroyVessel
+		type = DestroyVessel
+		onState = CONTRACT_COMPLETED
+		vessel = @/marker
+	}
+}
