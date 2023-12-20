@@ -1,0 +1,27 @@
+	REQUIREMENT
+	{
+		name = SolarPanelsUnlocked
+		type = Any
+
+		title = Have solar panels unlocked.
+
+		REQUIREMENT
+		{
+			name = StockSolar
+			type = PartModuleUnlocked
+			partModule = ModuleDeployableSolarPanel
+		}
+		REQUIREMENT:NEEDS[NearFutureSolar]
+		{
+			name = NFSolar
+			type = PartModuleUnlocked
+			partModule = ModuleCurvedSolarPanel
+		}
+		REQUIREMENT:NEEDS[Kopernicus]
+		{
+			name = KopernicusSolar
+			type = PartModuleUnlocked
+			partModule = KopernicusSolarPanel
+		}
+	}
+
