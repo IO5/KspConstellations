@@ -1,0 +1,9 @@
+
+	// finish non-generic first
+	REQUIREMENT
+	{
+		name = CompleteContract
+		type = CompleteContract
+
+		contractType = KPSBlock.2
+	}
