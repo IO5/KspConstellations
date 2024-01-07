@@ -1,0 +1,189 @@
+CONTRACT_TYPE
+{
+	sortKey = h
+
+	name = KolyniaConstellationStationKeep
+	group = StationKeepConstellations
+	agent = CommTech
+
+	title = Kolynia satellite station-keeping
+	description = It's been more than a year since we last verified the positions of the satellites in kolynia orbit. It is normal for a satellite to drift from its target position over time, we ask you to bring the relays back within margins. If a vessel is already in a correct position, you don't have to do anything other that focusing it.
+
+	synopsis = Fix kolynia satellites orbits if necessary
+
+	maxCompletions = 1
+	maxSimultaneous = 1
+
+	completedMessage = Positions verified successfully
+
+	prestige = Trivial
+
+	maxExpiry = 21
+
+	targetBody = HomeWorld()
+
+	DATA
+	{
+		type = double
+
+		inc = 63.4
+		sma = Pow((@/targetBody.GM() * Pow(@/targetBody.RotationalPeriod() / 2, 2)) / 39.478417604357432, 0.3333333333333333)
+		ecc = 0.74
+	}
+
+	rewardScience = 0
+	rewardReputation = @StationKeepConstellations:stationKeepReputation
+	rewardFunds = 12 * @StationKeepConstellations:stationKeepFunds / @targetBody.Multiplier()
+	advanceFunds = 0
+	failureReputation = @rewardReputation
+	failureFunds = @advanceFunds
+
+	REQUIREMENT
+	{
+		name = CompleteContract
+		type = CompleteContract
+
+		contractType = KolyniaConstellation
+		minCount = 12
+	}
+
+	REQUIREMENT
+	{
+		name = CompleteContract
+		type = CompleteContract
+
+		title = At least @StationKeepConstellations:stationKeepCD has passed since the last time the contract was completed.
+
+		contractType = KolyniaConstellationStationKeep
+		cooldownDuration = @StationKeepConstellations:stationKeepCD
+		minCount = 0
+	}
+
+	DATA
+	{
+		type = double
+
+		sensitivity = 2 * Pow(@sma, 1.5) / Pow(Max(1, @/targetBody.GM()), 0.5) // rate of change of sma in relation to orbital velocity
+		multiple = Pow(10, Round(Log(@sensitivity, 10) - 0.5))
+		coeff = Round(@sensitivity, @multiple) // sensitivity rounded to a nice round number
+
+		altThreshold1 = Round(@coeff / 2, @multiple)
+		distThreshold1 = @altThreshold1 * 2.5
+		distThreshold3 = @distThreshold1 * 2.5
+	}
+
+	DATA
+	{
+		type = long
+
+		intPe = Max(0, Round(@/PeR - @/targetBody.Radius()))
+		intAp = Max(0, Round(@/ApR - @/targetBody.Radius()))
+		kmDistThreshold3 = Round(@/distThreshold3 / 1000)
+
+		side = [0, 1].Random()
+	}
+
+	DATA
+	{
+		type = string
+		//vessel1 = "KPS-Sat "+@/plane+"1"
+		//vessel2 = "KPS-Sat "+@/plane+"2"
+		//vessel3 = "KPS-Sat "+@/plane+"3"
+		//vessel4 = "KPS-Sat "+@/plane+"4"
+		//vessel5 = "KPS-Sat "+@/plane+"5"
+		//vessel6 = "KPS-Sat "+@/plane+"6"
+	}
+
+	DATA
+	{
+		type = List<string>
+		letters = ["S1", "S2", "S3", "S4", "S5", "S6", "N1", "N2", "N3", "N4", "N5", "N6"].ElementAt(@/idx)
+		//vessels = [ @/vessel1, @/vessel2, @/vessel3, @/vessel4, @/vessel5, @/vessel6 ]
+	}
+
+	BEHAVIOUR
+	{
+		name = SpawnVessel
+		type = SpawnVessel
+
+		VESSEL
+		{
+			name = Kolynia Satellite Marker @/letters.ElementAt(@/idx)
+			craftPart = constellations-dummy
+			owned = False
+			targetBody = @/targetBody
+			vesselType = DroppedPart
+
+			ORBIT
+			{
+				SMA = @/sma
+				ECC = @/ecc
+				INC = @/inc
+				LPE = (@/idx / 6) * 180 + 90
+				LAN = (@/idx / 4) * 120
+				MNA = Mod(@/idx, 2) * 3.1415926536
+				EPH = 0
+				REF = 0 // ignored
+			}
+		}
+
+		// ...
+	}
+
+	PARAMETER
+	{
+		ITERATOR
+		{
+			type = int
+			idx = [0, 1, 2, 3, 4, 5]
+		}
+		name = "Sat"+@idx
+		type = VesselParameterGroup
+
+		vessel = @/vessels.ElementAt(@idx)
+
+		completedMessage = Position of @/vessels.ElementAt(@idx) verified successfully
+		rewardFunds = @StationKeepConstellations:stationKeepFunds / @targetBody.Multiplier()
+
+		PARAMETER
+		{
+			name = Orbit
+			type = Orbit
+
+			minPeA = Max(0, @/intAlt - @/altThreshold1)
+			maxApA = @/intAlt + @/altThreshold1
+
+			minInclination = Max(0, @/inc - 0.1)
+			maxInclination = Min(180, @/inc + 0.1)
+		}
+
+		PARAMETER
+		{
+			name = Rendezvous
+			type = Rendezvous
+
+			title = "The satellite should be within "+@/kmDistThreshold3.Print()+" km of the "+@/letters.ElementAt(@/idx)+" marker"
+			hideChildren = !@StationKeepConstellations:DEBUG
+
+			disableOnStateChange = false
+
+			vessel = Kolynia Satellite Marker @/letters.ElementAt(@/idx)
+			distance = @/distThreshold3
+		}
+
+		duration = 2s
+	}
+
+	//BEHAVIOUR
+	//{
+	//	name = DestroyVessel
+	//	type = DestroyVessel
+	//	onState = CONTRACT_COMPLETED
+	//	vessel = @/markers.ElementAt(0)
+	//	vessel = @/markers.ElementAt(1)
+	//	vessel = @/markers.ElementAt(2)
+	//	vessel = @/markers.ElementAt(3)
+	//	vessel = @/markers.ElementAt(4)
+	//	vessel = @/markers.ElementAt(5)
+	//}
+}
