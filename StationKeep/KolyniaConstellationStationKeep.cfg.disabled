@@ -67,7 +67,7 @@ CONTRACT_TYPE
 		multiple = Pow(10, Round(Log(@sensitivity, 10) - 0.5))
 		coeff = Round(@sensitivity, @multiple) // sensitivity rounded to a nice round number
 
-		altThreshold1 = Round(@coeff / 2, @multiple)
+		altThreshold1 = Round(@coeff / 2 + @multiple / 2, @multiple)
 		distThreshold1 = @altThreshold1 * 2.5
 		distThreshold3 = @distThreshold1 * 2.5
 	}
