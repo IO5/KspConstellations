@@ -1,0 +1,15 @@
+{
+    "NAME":"Contract Pack: Constellations",
+    "URL":"https://forum.kerbalspaceprogram.com/topic/224837-112x-contract-pack-constellations/",
+    "DOWNLOAD":"https://spacedock.info/mod/3601/Contract%20Pack:%20Constellations",
+    "GITHUB":{
+        "USERNAME":"IO5",
+        "REPOSITORY":"KspConstellations"
+    },
+    "VERSION":
+    {
+        "MAJOR":0,
+        "MINOR":3,
+    },
+    "KSP_VERSION":{"MAJOR":1,"MINOR":12,"PATCH":5}
+}
