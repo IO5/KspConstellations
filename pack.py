@@ -12,6 +12,7 @@ ignore = [
     "*.disabled",
     self_path.name,
     zip_path.name,
+    ".gitignore"
 ]
 
 def walk(path): 
